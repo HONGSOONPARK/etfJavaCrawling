@@ -106,7 +106,7 @@ public class craw {
             //actions.moveToElement(webElement).click().build().perform();
             
               
-            Thread.sleep(2000);
+            
             
             webElement = driver.findElement(By.id("totalPages"));
             
@@ -119,21 +119,27 @@ public class craw {
             
             String href = "";
             
+            
             urlList = new ArrayList<>();
-         
+            
+            Thread.sleep(5000);
             
             for(int i = 0; i < pageNum; i++){
             	
-            	System.out.println(i);
-            	
+     
             	  weList = driver.findElements(By.xpath(".//*[@id='finderTable']/tbody/tr"));
-                
+            	  Thread.sleep(10);
+            	  
                 for(int l = 1; l <= weList.size(); l++){
-                	//webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr["+l+"]/td[1]/a"));
-                	webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr["+l+"]/td[1]"));
+                	webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr["+l+"]/td[1]/a"));
+                	//webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr["+l+"]/td[1]"));
                 	
                 	href = webElement.getAttribute("href");
-                	urlList.add(l-1, href);
+                	
+            
+                	urlList.add(href);
+                	
+                	System.out.println(href);
 //                	System.out.println(webElement.getText());
                 	
                 }
