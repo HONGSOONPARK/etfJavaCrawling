@@ -1,10 +1,13 @@
 package webCatch;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -45,19 +48,48 @@ public class SjStock {
 	ArrayList<String> urlList;
 
 	private String base_url;
+	
+	
 
-	BufferedOutputStream bs = null;
-
+	BufferedOutputStream bos = null;
+	BufferedOutputStream bosResult = null;
+	
+	
+	
+	BufferedInputStream bis = null;
+	
+	
+	
 	public static void main(String[] args) throws ClientProtocolException, IOException {
 
 		log.setLevel(Level.INFO);
 
+		long startDate = System.currentTimeMillis();
 		log.info(" Start Date : " + getCurrentData());
 
+		
 		SjStock selTest = new SjStock();
-		selTest.crawling();
+		
+		
+		//selTest.crawling();
+		
+		selTest.crawlingDetail();
+		
+		
+//		if(){
+//			selTest.getDetail();
+//			log.info("********** ETF 목록 불러오기 성공 ");
+//			
+//		}else{
+//			log.info("********** ETF 목록 불러오기 실패 ");
+//		}
+//	
+
 
 		log.info(" End Date : " + getCurrentData());
+		long endDate = System.currentTimeMillis();
+		log.info( "실행 시간 : " + (endDate - startDate )/1000.0 +"초");
+		
 
 	}
   
@@ -79,8 +111,9 @@ public class SjStock {
 
 		driver = new ChromeDriver(options);
 
-		base_url = "https://www.etf.com/etfanalytics/etf-finder";
+		base_url = "https://www.etf.com/";
 	}
+	
  
 	public void crawling() {
 		
@@ -98,23 +131,22 @@ public class SjStock {
 				
 		// 클릭 이벤트시 사용 
 		// Actions actions = new Actions(driver);
-
 		
-		// 자바스크립트 컨트롤러 		
-		JavascriptExecutor js = (JavascriptExecutor) driver;
+		ArrayList<String> urlList = new ArrayList<>();
 
+		JavascriptExecutor js = (JavascriptExecutor) driver;
 		try {
 			
 			// webElemnet init;
 			webElement = null;
 
-			driver.get(base_url);
+			driver.get(base_url+"etfanalytics/etf-finder");
 
 			WebDriverWait myWaitVar = new WebDriverWait(driver, 30);
 			
 			
 			// 크롤링 결과 저장할 텍스트 파일 생성
-			bs = new BufferedOutputStream(new FileOutputStream(System.getProperty("user.dir") + "/ETF-RESULT.txt"));
+			bos = new BufferedOutputStream(new FileOutputStream(System.getProperty("user.dir") + "/ETF-RESULT.txt"));
 			
 
 			// 크롤링으로 찾을 테이블 id : results
@@ -159,11 +191,14 @@ public class SjStock {
 
 					resultText += getEtfHref + "\t";
 					
-					System.out.println(getEtfHref);
+//					System.out.println(getEtfHref);
+					urlList.add(getEtfHref);
 
 				}
 				Thread.sleep(5);
 				resultText += "\n";
+				
+				log.info("********** 파싱중 ....");
 
 				webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr[1]"));
 
@@ -177,33 +212,128 @@ public class SjStock {
 
 			}
 			
-			resultText += "\n 예상 : "+etfResult +" | 검색 결과 : "+cnt+"\n";
 			
+			bos.write(resultText.getBytes()); // Byte형으로만 넣을 수 있음
+			bos.flush();
+			
+			log.info("\n 예상 : "+etfResult +" | 검색 결과 : "+cnt+" | ");
 			if(etfResult == cnt){
-				resultText += "크롤링 성공";
+				log.info("\n 성공 ");
 			}else{
-				resultText += "크롤링 실패";
+				log.info("\n 실패 ");
 			}
 			
-			bs.write(resultText.getBytes()); // Byte형으로만 넣을 수 있음
+			
 
-			Thread.sleep(1000);
+			Thread.sleep(3000);
+			
+	
+			log.info("********** 다시 파싱하기 ....");
+			
 
+			
+			
 		} catch (Exception e) {
 
 			e.printStackTrace();
 
 		} finally {
+			bos = null;
+			webElement = null;
+			weList = null;
+			
 			driver.close();
+			
 		}
 
 	}
+	
+	public void crawlingDetail() {
+		
 
+		
+		ArrayList<String> urlListTest = new ArrayList<>(Arrays.asList("SPY","IVV","VTI","VOO","QQQ","VEA","AGG","IEFA","VWO","EFA"));
+		
+		ArrayList<String[]> resultList = new ArrayList<>();
+
+		JavascriptExecutor js = (JavascriptExecutor) driver;
+		WebDriverWait myWaitVar = null;
+		String resultDetail = "";
+		String title = "";
+		
+
+		
+		
+		
+		try {
+			// webElemnet init;
+			webElement = null;
+			
+		
+			bos = new BufferedOutputStream(new FileOutputStream(System.getProperty("user.dir") + "/RESULT.txt"));
+
+			for(int i = 0; i < urlListTest.size(); i++){
+				driver.get(base_url+""+urlListTest.get(i));	
+			
+				myWaitVar = new WebDriverWait(driver, 30);
+				
+				// 크롤링으로 찾을 테이블 id : results
+				myWaitVar.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]")));
+	
+				webElement = driver.findElement(By.xpath("//*[@id='form-reports-header']/div[1]/section[1]/section[1]/h1"));
+				
+				title = webElement.getText();
+				
+				resultDetail += title+"\t";
+				
+//				System.out.print(title+"\t");
+				
+				webElement = driver.findElement(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]/div[1]/div[2]"));
+				
+				js.executeScript("arguments[0].scrollIntoView();", webElement);
+
+				weList = driver.findElements(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]/div[1]/div[2]/a"));
+				
+				for (int l = 1; l <= weList.size(); l++) {
+					webElement = driver.findElement(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]/div[1]/div[2]/a["+l+"]"));
+
+					//resultList.add()
+					
+					if(l!=weList.size()){
+						resultDetail += webElement.getText()+", ";	
+					}else{
+						resultDetail += webElement.getText();
+					}
+					
+							
+//					System.out.print(webElement.getText()+"\t");
+				}
+				resultDetail += "\n";
+//				System.out.println();
+
+			}
+			bos.write(resultDetail.getBytes()); // Byte형으로만 넣을 수 있음
+			bos.flush();
+			
+			System.out.println(resultDetail);
+			
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+		} finally {
+			bos = null;
+			webElement = null;
+			weList = null;
+
+			driver.close();
+			
+		}
+	}
+	
 
 	public static String getCurrentData() {
-
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-
 		return sdf.format(new Date());
 
 	}
