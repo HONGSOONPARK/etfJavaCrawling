@@ -99,10 +99,11 @@ public class SjStock {
 		logger.log(logger.getLevel(), " Start Date : " + getCurrentData());
 
 		
-		SjStock selTest = new SjStock();
+		SjStock sjstock1 = new SjStock();
+		SjStock sjstock2 = new SjStock();
 		
-		selTest.etfNameCrawling();
-		selTest.etfDetailCrawling(urlList);
+		sjstock1.etfNameCrawling();
+		sjstock2.etfDetailCrawling(urlList);
 
 		
 		// 프로그램 종료시간
@@ -120,7 +121,7 @@ public class SjStock {
 
 		// System Property SetUp
 		System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
-
+		
 		// Driver SetUp, Add Options
 		ChromeOptions options = new ChromeOptions();
 		options.setCapability("ignoreProtectedModeSettings", true);
@@ -266,6 +267,7 @@ public class SjStock {
 			bos = null;
 			webElement = null;
 			weList = null;
+			driver.close();
 		}
 	}
 	
@@ -428,6 +430,8 @@ public class SjStock {
 			bos = null;
 			webElement = null;
 			weList = null;
+			
+			driver.close();
 		}
 	}
 
