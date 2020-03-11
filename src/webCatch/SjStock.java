@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,7 +26,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
  * 
  * 
  * @author 박홍순
- * @version Test Version 0.2
+ * @version Test Version 0.4
  * @since 2020.03.01
  * 
  * 개발 : Java 1.8, Selenium-java-3.141.59, Chromedriver-81v
@@ -43,7 +44,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
  * 5. Ticker 값 ArrayList 에 저장, 그리고 끝나면 ETF-RESULT.txt에 저장
  * 6. ArrayList 의 개수 만큼 URL 반복 접근( URL은 https://www.etf.com + Ticker 값임, Ex)https://www.etf.com/SPY )
  * 7. URL 접근 후 TITLE 값 파싱 : 페이지 접근여부, 접근 안되면 에러 로그 남기고 다음 페이지 접근
- * 8. TITLE 값이 파싱 됨 -> URL 정상 접근이라 판단하고 Competing ETFs 값을 파싱
+ * 8. TITLE 값이 파싱 됨 -> URL 정상 접근이라 판단하고 나머지 값을 파싱
  * 9. ArrayList 의 개수 만큼 반복하여 데이터 파싱, 100번 반복시 RESULT.txt에 저장
  * 10. 모든 페이지 접근 후 데이터는 RESULT.txt에 저장, 프로그램 종료 
  * 11. 예외처리 발생시 로그만 남기고 걍 다음단계로 넘어감
@@ -82,6 +83,12 @@ public class SjStock {
 	// 파싱한 url 목록
 	private static ArrayList<String> urlList;
 	
+	// 파싱한 url 목록
+	
+	// 파싱한 url 목록
+	private static String[] urlList2;
+	private static ArrayList<String[]> urlList3;
+	
 	// 접속할 기본 url 
 	private String base_url;
 	
@@ -100,10 +107,10 @@ public class SjStock {
 
 		
 		SjStock sjstock1 = new SjStock();
-		SjStock sjstock2 = new SjStock();
+//		SjStock sjstock2 = new SjStock();
 		
 		sjstock1.etfNameCrawling();
-		sjstock2.etfDetailCrawling(urlList);
+//		sjstock2.etfDetailCrawling(urlList);
 
 		
 		// 프로그램 종료시간
@@ -163,6 +170,9 @@ public class SjStock {
 		// 크롤링으로 찾은 url개수
 		int cnt = 0;
 		
+		// 분리하여 저장
+		int arryCnt = 0;
+		
 		// ETF RESULTS(예상 결과)
 		int etfResult = 0;
 				
@@ -170,6 +180,8 @@ public class SjStock {
 		// Actions actions = new Actions(driver);
 		
 		urlList = new ArrayList<>();
+		
+		
 		JavascriptExecutor js = (JavascriptExecutor) driver;
 		
 		try {
@@ -194,6 +206,13 @@ public class SjStock {
 			
 			etfResult = Integer.parseInt(webElement.getText().substring(0, webElement.getText().indexOf(" ")).replace(",",""));
 			
+			urlList2 = new String[etfResult];
+			urlList3 = new ArrayList<String[]>();
+			
+			//logger.log(logger.getLevel(), "********** Thread Cnt  "+(etfResult/500));
+//			int threadCnt = (int)Math.ceil(etfResult/500);
+			
+			
 			// 하단 페이지당 100개 보여주기 클릭
 			webElement = driver.findElement(By.xpath("//*[@id='results']/div[2]/section[2]"));
 			
@@ -213,7 +232,6 @@ public class SjStock {
 			
 			logger.log(logger.getLevel(), "********** All Page : "+pageNum);
 		
-			
 			// 페이지를 돌며 tr 개수만큼 첫번째 td 값을 가져옴
 			for (int i = 0; i < pageNum; i++) {
 
@@ -222,9 +240,21 @@ public class SjStock {
 				for (int l = 1; l <= weList.size(); l++) {
 					webElement = driver.findElement(By.xpath(".//*[@id='finderTable']/tbody/tr[" + l + "]/td[1]"));
 					getEtfHref = webElement.getText();
-					cnt++;
 					resultText += getEtfHref + "\n";
+					
 					urlList.add(getEtfHref);
+					
+					urlList2[cnt] = getEtfHref;
+					
+					
+					cnt++;
+//					arryCnt++;
+					if(cnt%500==0){
+						
+						urlList3.add(arryCnt, urlList2);
+						arryCnt++;
+						
+					}
 				}
 				Thread.sleep(5);
 				//resultText += "\n";
@@ -241,12 +271,16 @@ public class SjStock {
 				//actions.moveToElement(webElement).click().build().perform();
 			}
 			
+			arryCnt++;
+			urlList3.add(arryCnt, urlList2);
+			
+			
 			resultText += "\n//Create Time :"+getCurrentData();
 			resultText += "\n//"+base_url;
 			
 
 			
-			logger.log(logger.getLevel(), "\n 예상 : "+etfResult +" | 검색 결과 : "+cnt+" | ");
+			logger.log(logger.getLevel(), "\n 예상 : "+etfResult +" | 검색 결과 : "+cnt);
 			if(etfResult == cnt){
 				logger.log(logger.getLevel(), "\n 성공 ");
 			}else{
@@ -254,6 +288,16 @@ public class SjStock {
 			}
 
 			Thread.sleep(3000);
+			
+			logger.log(logger.getLevel(), "\n\n\n 사이즈 : "+urlList3.size());
+			
+			for(int l =0;l<urlList3.size();l++){
+				logger.log(logger.getLevel(),urlList3.get(l)+"\n");	
+			}
+			
+			할것 멀티 쓰레드로 하기 위해서
+			
+			etf 다중배열로 가져오기 ㅋ
 			
 			
 		} catch (Exception e) {
@@ -268,6 +312,7 @@ public class SjStock {
 			webElement = null;
 			weList = null;
 			driver.close();
+			Runtime.getRuntime().exec("taskkill /F /IM chromedriver_80v.exe /T");
 		}
 	}
 	
@@ -284,7 +329,7 @@ public class SjStock {
 	public void etfDetailCrawling(ArrayList<String> list) throws IOException {
 	
 		// Test Data
-		// list = new ArrayList<>(Arrays.asList("SPY","IVV","VTI","VOO","QQQ","VEA","AGG","IEFA","VWO","EFA"));
+		 list = new ArrayList<>(Arrays.asList("SPY","IVV","VTI","VOO","QQQ","VEA","AGG","IEFA","VWO","EFA"));
 
 		ArrayList<String> urlListTest = new ArrayList<>();
 		
@@ -296,7 +341,8 @@ public class SjStock {
 		String closingPrice = "";
 		String change = "";
 		String time = "";
-		String competingETSs = "";	
+		String competingETSs = "";
+		String relatedEtfChannels = "";
 		
 		logger.log(logger.getLevel(), "Init - resultDetail["+resultDetail+"] "
 				+ "| name["+name+"] "
@@ -304,7 +350,8 @@ public class SjStock {
 				+ "| closingPrice["+closingPrice+"] "
 				+ "| change["+change+"] "
 				+ "| time["+time+"] | " 
-				+ "| competingETSs["+competingETSs+"] | " );
+				+ "| competingETSs["+competingETSs+"]"
+				+ "| relatedEtfChannels["+relatedEtfChannels+"]");
 		
 				
 		int saveCount = 0;
@@ -321,7 +368,7 @@ public class SjStock {
 			
 				// 말머리 만든다~~
 //				resultDetail += "Name\tDetailName\tClosing Price\tChange\tTime\tCompeting ETFs\n";
-				resultDetail += "Name\tDetailName\tCompeting ETFs\n";
+				resultDetail += "Name\tDetailName\tCompeting ETFs\tRelated ETF Channels\n";
 				
 				for(int i = 0; i < urlListTest.size(); i++){
 					driver.get(base_url+""+urlListTest.get(i));	
@@ -395,6 +442,24 @@ public class SjStock {
 							competingETSs ="";
 						}
 						
+						resultDetail += "\t";
+						
+						
+						// relatedEtfChannels를 가져온다
+						weList = driver.findElements(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]/div[1]/div[3]/a"));
+						for (int l = 1; l <= weList.size(); l++) {	
+
+							// relatedEtfChannels
+							webElement = driver.findElement(By.xpath("//*[@id='form-reports-header']/div[1]/section[3]/div[1]/div[3]/a["+l+"]"));
+							if(l != weList.size()){
+								relatedEtfChannels += webElement.getText()+", ";	
+							}else{
+								relatedEtfChannels += webElement.getText();
+							}
+							resultDetail += relatedEtfChannels;
+							relatedEtfChannels ="";
+						}
+						
 						resultDetail += "\n";
 						logger.log(logger.getLevel(), "파싱 진행중 {"+i+"} : "+ urlListTest.get(i));
 						saveCount++;
@@ -432,6 +497,8 @@ public class SjStock {
 			weList = null;
 			
 			driver.close();
+			Runtime.getRuntime().exec("taskkill /F /IM chromedriver_80v.exe /T");
+
 		}
 	}
 
